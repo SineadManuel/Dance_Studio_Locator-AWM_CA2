@@ -1,0 +1,129 @@
+{% extends 'ds_locator/base.html' %}
+
+{% load leaflet_tags %}
+
+{% block title %}Map{% endblock %}
+
+{% block content %}
+    <script>
+        var HOST = location.protocol + "//" + location.host;
+        var locationMarker;
+        var circle;
+
+        function map_init_basic(map) {
+            updateLocation(map);
+        }
+
+        function updateLocation(map) {
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    setMapToCurrentLocation(map, pos);
+                    update_db(pos);
+                },
+                function (err) {
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 30000
+                }
+            );
+        }
+
+        function setMapToCurrentLocation(map, pos) {
+            var myLatLon = L.latLng(pos.coords.latitude, pos.coords.longitude);
+            var lat = pos.coords.latitude;
+            var long = pos.coords.longitude;
+
+            map.flyTo(myLatLon, 16);
+
+            locationMarker = L.marker(myLatLon).addTo(map)
+            .bindPopup("<h3>Your Location</h3>Latitidue: " + lat + "<br/>Longitude: " + long).openPopup();
+
+            circle = L.circle(myLatLon, {
+                color: 'blue',
+                fillColor: 'blue',
+                fillOpacity: 0.2,
+                radius: pos.coords.accuracy
+            }).addTo(map);
+
+            console.log('found location')
+
+            findStudio();
+            console.log('left studio')
+        }
+
+        function update_db(pos) {
+            let locString = pos.coords.longitude + ", " + pos.coords.latitude;
+
+            $.ajax({
+                type: "POST",
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                url: HOST + "/updatedb/",
+                data: {
+                    point: locString
+                }
+            });
+        }
+
+        function findStudio() {
+            console.log('locating studio')
+            $.ajax({
+                type: "POST",
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                {#url: HOST + "/updatedb/",#}
+                data: {
+                    bbox: map.getBounds().toBBoxString()
+                },
+            }).done(function (data, status, xhr) {
+
+                //Create a cluster group for our markers to avoid clutter. 'Marker Cluster' is a Leaflet plugin.
+                var poi_markers = L.markerClusterGroup();
+
+                // Handle GeoJSON response from the server.
+                var geoJsonLayer = L.geoJson(data, {
+                    pointToLayer: function (feature, latlng) {
+                        // Associate each point with the icon we made earlier
+                        return L.marker(latlng, {icon: icon});
+                    },
+                    onEachFeature: function (feature, layer) {
+                        // For each feature associate a popup with the 'name' property
+                        layer.bindPopup(feature.properties.name);
+                    }
+                });
+
+                // Add the GeoJSON layer to the cluster.
+                poi_markers.addLayer(geoJsonLayer);
+
+                // Add the cluster to the map.
+                map.addLayer(poi_markers);
+            });
+
+            console.log('leaving studio')
+        }
+
+    </script>
+
+    <style>
+        #nav {
+            background-color: #333;
+        }
+
+        .leaflet-container {
+            width:  100%;
+            height: 83vh;
+        }
+    </style>
+
+    <ul id="nav">
+        <li><a href="{% url 'index' %}">Dance Studio Locator</a></li>
+        <li><a href="{% url 'index' %}">home</a></li>
+        <li><a href="{% url 'logout' %}">logout</a></li>
+    </ul>
+
+    {% leaflet_map "lbs_app_worldborder" callback="window.map_init_basic" %}
+
+{% endblock %}

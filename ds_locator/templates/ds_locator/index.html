@@ -1,0 +1,29 @@
+{% extends 'ds_locator/base.html' %}
+
+{% block title %}Index{% endblock %}
+
+{% block content %}
+    <style>
+        #nav {
+            background-color: #333;
+        }
+    </style>
+
+    {% if user.is_authenticated %}
+        <ul id="nav">
+            <li><a>Dance Studio Locator</a></li>
+            <li><a href="{% url 'map' %}">map</a></li>
+            <li><a href="{% url 'logout' %}">logout</a></li>
+        </ul>
+
+        <h1>Welcome {{ user.username }}!</h1>
+    {% else %}
+        <ul id="nav">
+            <li><a>Dance Studio Locator</a></li>
+            <li><a href="{% url 'login' %}">login</a></li>
+            <li><a href="{% url 'register' %}">register</a></li>
+        </ul>
+
+        <p>Please login to access the map</p>
+    {% endif %}
+{% endblock %}

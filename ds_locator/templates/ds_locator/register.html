@@ -1,0 +1,30 @@
+{% extends 'ds_locator/base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+    <style>
+        #nav {
+            background-color: #333;
+        }
+
+        .errorlist {
+            color: red;
+        }
+    </style>
+
+    <ul id="nav">
+        <li><a>Dance Studio Locator</a></li>
+        <li><a href="{% url 'index' %}">home</a></li>
+        <li><a href="{% url 'login' %}">login</a></li>
+    </ul>
+
+    <h1>Register</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form }}
+        <br><br>
+        <button type="submit">Sign Up</button>
+    </form>
+{% endblock %}
